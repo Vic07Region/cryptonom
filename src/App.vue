@@ -74,6 +74,7 @@
           id="filters"
           type="text"
           v-model="filter"
+          placeholder="Например DOGE"
           class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
         />
         <section class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
@@ -87,7 +88,7 @@
             "
             class=""
           >
-            &lt;&lt; Назад
+            <i v-if="page > 1"> &lt;&lt; </i> Назад
           </button>
           <span
             class="inline-flex justify-center items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
@@ -103,7 +104,8 @@
                 : 'inline-block rounded bg-neutral-800 px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-neutral-50 shadow-[0_4px_9px_-4px_#332d2d] transition duration-150 ease-in-out hover:bg-neutral-800 hover:shadow-[0_8px_9px_-4px_rgba(51,45,45,0.3),0_4px_18px_0_rgba(51,45,45,0.2)] focus:bg-neutral-800 focus:shadow-[0_8px_9px_-4px_rgba(51,45,45,0.3),0_4px_18px_0_rgba(51,45,45,0.2)] focus:outline-none focus:ring-0 active:bg-neutral-900 active:shadow-[0_8px_9px_-4px_rgba(51,45,45,0.3),0_4px_18px_0_rgba(51,45,45,0.2)] dark:bg-neutral-900 dark:shadow-[0_4px_9px_-4px_#171717] dark:hover:bg-neutral-900 dark:hover:shadow-[0_8px_9px_-4px_rgba(27,27,27,0.3),0_4px_18px_0_rgba(27,27,27,0.2)] dark:focus:bg-neutral-900 dark:focus:shadow-[0_8px_9px_-4px_rgba(27,27,27,0.3),0_4px_18px_0_rgba(27,27,27,0.2)] dark:active:bg-neutral-900 dark:active:shadow-[0_8px_9px_-4px_rgba(27,27,27,0.3),0_4px_18px_0_rgba(27,27,27,0.2)]'
             "
           >
-            Вперед >>
+            Вперед
+            <i v-if="hasNpage">>></i>
           </button>
         </section>
         <hr class="w-full border-t border-gray-600 my-4" />
@@ -332,7 +334,9 @@ export default {
     },
     tdelete(tik) {
       this.tikers = this.tikers.filter((t) => t != tik);
-      this.sel = null;
+      if (this.sel === tik) {
+        this.sel = null;
+      }
     },
     select(tiker) {
       this.sel = tiker;
