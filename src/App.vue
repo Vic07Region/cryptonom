@@ -198,7 +198,7 @@
 
 <script>
 import _ from "lodash";
-import { getCoins, loadTikers } from "@/API";
+import { getCoins, subscribeToTicker } from "@/API";
 
 export default {
   name: "App",
@@ -238,10 +238,18 @@ export default {
     //   this.page = Number(windowData.page);
     //   console.log(windowData.page);
     // }
-    const tikerData = localStorage.getItem("crypto-list");
-    if (tikerData) {
-      this.tikers = JSON.parse(tikerData);
-      setInterval(this.updateTikers, 5000);
+    const tickersData = localStorage.getItem("crypto-list");
+    console.log(1);
+    if (tickersData) {
+      this.tikers = JSON.parse(tickersData);
+      this.tikers.forEach((ticker) => {
+        subscribeToTicker(
+          ticker.name,
+          (newPrice, currency) =>
+            this.updateTicker(ticker.name, newPrice, currency),
+          ticker.currency
+        );
+      });
     }
   },
   computed: {
@@ -285,9 +293,14 @@ export default {
       if (maxValue === minValue) {
         return this.graph.map(() => 50);
       }
-      return this.graph.map(
-        (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue) + 0
-      );
+      const maxLengh = this.graph.length + 50;
+      const minLengh = this.graph.length - 50;
+
+      return this.graph
+        .map(
+          (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue) + 0
+        )
+        .slice(minLengh, maxLengh);
     },
     pageStateOptions() {
       return {
@@ -297,27 +310,37 @@ export default {
     },
   },
   methods: {
+    updateTicker(tickerName, price, currency) {
+      this.tikers
+        .filter((t) => t.name === tickerName && t.currency === currency)
+        .forEach((t) => {
+          if (t === this.sel) {
+            this.graph.push(price);
+          }
+          t.price = price;
+        });
+    },
     formatPrice(price) {
       if (price === "-") {
         return price;
       }
       return price > 1 ? price.toFixed(2) : price.toPrecision(2);
     },
-    async updateTikers() {
-      if (!this.tikers.length) {
-        return;
-      }
-
-      const exchangeData = await loadTikers(this.tikers.map((t) => t.name));
-      this.tikers.forEach((tiker) => {
-        const price =
-          exchangeData[tiker.name.toUpperCase()][tiker.currency.toUpperCase()];
-        tiker.price = price ?? "-";
-      });
-      if (this.sel) {
-        this.graph.push(this.sel.price);
-      }
-    },
+    // async updateTikers() {
+    //   if (!this.tikers.length) {
+    //     return;
+    //   }
+    //
+    //   const exchangeData = await loadTikers(this.tikers.map((t) => t.name));
+    //   this.tikers.forEach((tiker) => {
+    //     const price =
+    //       exchangeData[tiker.name.toUpperCase()][tiker.currency.toUpperCase()];
+    //     tiker.price = price ?? "-";
+    //   });
+    //   if (this.sel) {
+    //     this.graph.push(this.sel.price);
+    //   }
+    // },
     add() {
       const currTiker = {
         name: this.tiker.toUpperCase(),
@@ -326,7 +349,13 @@ export default {
       };
       if (!this.is_valid && this.tiker !== "") {
         this.tikers = [...this.tikers, currTiker];
-        this.updateTikers();
+        subscribeToTicker(
+          currTiker.name,
+          (newPrice, currency) =>
+            this.updateTicker(currTiker.name, newPrice, currency),
+          currTiker.currency
+        );
+
         this.tiker = "";
       } else {
         alert("Ошибка заполнения");
