@@ -198,7 +198,7 @@
 
 <script>
 import _ from "lodash";
-import { getCoins, subscribeToTicker } from "@/API";
+import { getCoins, subscribeToTicker, unsubscribeFromTicker } from "@/API";
 
 export default {
   name: "App",
@@ -239,7 +239,6 @@ export default {
     //   console.log(windowData.page);
     // }
     const tickersData = localStorage.getItem("crypto-list");
-    console.log(1);
     if (tickersData) {
       this.tikers = JSON.parse(tickersData);
       this.tikers.forEach((ticker) => {
@@ -363,8 +362,10 @@ export default {
     },
     tdelete(tik) {
       this.tikers = this.tikers.filter((t) => t != tik);
+      unsubscribeFromTicker(tik);
       if (this.sel === tik) {
         this.sel = null;
+        //test
       }
     },
     select(tiker) {
