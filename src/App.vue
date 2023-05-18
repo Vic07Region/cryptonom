@@ -331,20 +331,15 @@ export default {
       this.maxGraphLength = this.$refs.graph.clientWidth / 39;
     },
     updateTicker(tickerName, price, currency) {
-      this.tikers
-        .filter((t) => t.name === tickerName && t.currency === currency)
-        .forEach((t) => {
-          if (t === this.sel) {
-            this.graph.push(price);
-            // if (this.graph.length > this.maxGraphLength) {
-            //   this.graph = this.graph.slice(
-            //     this.graph.length - Number(this.maxGraphLength),
-            //     this.graph.length + Number(this.maxGraphLength)
-            //   );
-            // }
-          }
-          t.price = price;
-        });
+      const filtered = this.tikers.filter(
+        (t) => t.currency === currency && t.name === tickerName
+      );
+      filtered.forEach((t) => {
+        t.price = price;
+        if (t === this.sel && !this.graph.find((el) => el === price)) {
+          this.graph.push(price);
+        }
+      });
     },
     formatPrice(price) {
       if (price === "-") {
