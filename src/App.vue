@@ -158,7 +158,10 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           {{ sel.name }} - {{ sel.currency }}
         </h3>
-        <div class="flex items-end border-gray-600 border-b border-l h-64">
+        <div
+          class="flex items-end border-gray-600 border-b border-l h-64"
+          ref="graph"
+        >
           <div
             v-for="(bar, idx) in normalizedGraph"
             :key="idx"
@@ -214,10 +217,17 @@ export default {
       coins: [],
       page: 1,
       filter: "",
+      maxGraphLength: 1,
     };
   },
   mounted() {
     this.loadCoinList();
+    window.addEventListener("resize", () => {
+      this.calculateMaxGraphLength();
+    });
+  },
+  beforeUnmount() {
+    window.removeEventListener("resize", this.calculateMaxGraphLength);
   },
   created() {
     const windowData = Object.fromEntries(
@@ -294,12 +304,17 @@ export default {
       if (maxValue === minValue) {
         return this.graph.map(() => 50);
       }
-      // const maxLengh = this.graph.length + 50;
-      // const minLengh = this.graph.length - 50;
+      const minLengh =
+        this.graph.length < Number(this.maxGraphLength)
+          ? 0
+          : this.graph.length - Number(this.maxGraphLength);
+      const maxLengh = this.graph.length + Number(this.maxGraphLength);
 
-      return this.graph.map(
-        (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue) + 0
-      ); // .slice(minLengh, maxLengh);
+      return this.graph
+        .map(
+          (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue) + 0
+        )
+        .slice(minLengh, maxLengh);
     },
     pageStateOptions() {
       return {
@@ -309,15 +324,24 @@ export default {
     },
   },
   methods: {
+    calculateMaxGraphLength() {
+      if (!this.$refs.graph) {
+        return;
+      }
+      this.maxGraphLength = this.$refs.graph.clientWidth / 39;
+    },
     updateTicker(tickerName, price, currency) {
       this.tikers
         .filter((t) => t.name === tickerName && t.currency === currency)
         .forEach((t) => {
           if (t === this.sel) {
             this.graph.push(price);
-            if (this.graph.length > 20) {
-              this.graph.shift();
-            }
+            // if (this.graph.length > this.maxGraphLength) {
+            //   this.graph = this.graph.slice(
+            //     this.graph.length - Number(this.maxGraphLength),
+            //     this.graph.length + Number(this.maxGraphLength)
+            //   );
+            // }
           }
           t.price = price;
         });
@@ -374,6 +398,7 @@ export default {
     select(tiker) {
       this.sel = tiker;
     },
+
     async loadCoinList() {
       this.coins = await getCoins();
     },
@@ -384,6 +409,9 @@ export default {
     },
     sel() {
       this.graph = [];
+      setTimeout(() => {
+        this.calculateMaxGraphLength();
+      }, 0);
     },
     paginatedTiker() {
       if (this.paginatedTiker.length === 0 && this.page > 1) {
