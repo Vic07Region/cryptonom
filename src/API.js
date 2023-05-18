@@ -19,29 +19,7 @@ const socket = new WebSocket(
 const channel = new BroadcastChannel("TikersData");
 
 const AGGREGATE_INDEX = "5";
-
-socket.addEventListener("message", (e) => {
-  const {
-    TYPE: type,
-    FROMSYMBOL: currency,
-    TOSYMBOL: exchange,
-    PRICE: newPrice,
-  } = JSON.parse(e.data);
-  if (type !== AGGREGATE_INDEX || newPrice === undefined) {
-    return;
-  }
-
-  const handlers = tickersHandlers.get(currency) ?? [];
-  if (socket.readyState === WebSocket.OPEN) {
-    const tickerCast = {
-      Sym: currency,
-      Price: newPrice,
-      Cur: exchange,
-    };
-    channel.postMessage(tickerCast);
-  }
-  handlers.forEach((fn) => fn(newPrice, exchange));
-});
+const covertedCoins = new Map();
 
 function sendToWebSocket(message) {
   const stringifiedMessage = JSON.stringify(message);
@@ -97,6 +75,69 @@ export const unsubscribeFromTicker = (ticker, currency) => {
   // channel.postMessage(JSON.parse(JSON.stringify(tk)));
   unsubscribeFromTickerOnWs(ticker, currency);
 };
+let btcUSD = 0.0;
+let btcRUB = 0.0;
+let btcKZT = 0.0;
+socket.addEventListener("message", (e) => {
+  let {
+    MESSAGE: message,
+    TYPE: type,
+    FROMSYMBOL: currency,
+    TOSYMBOL: exchange,
+    PRICE: newPrice,
+  } = JSON.parse(e.data);
+  if (currency === "BTC" && exchange === "USD" && newPrice !== undefined) {
+    btcUSD = newPrice;
+  }
+  if (currency === "BTC" && exchange === "RUB" && newPrice !== undefined) {
+    btcRUB = newPrice;
+  }
+  if (currency === "BTC" && exchange === "KZT" && newPrice !== undefined) {
+    btcKZT = newPrice;
+  }
+  if (message === "INVALID_SUB") {
+    subscribeToTickerOnWs("BTC", "USD");
+    subscribeToTickerOnWs("BTC", "RUB");
+    subscribeToTickerOnWs("BTC", "KZT");
+    const data = JSON.parse(e.data);
+    let paramSplit = data.PARAMETER.split("~");
+    if (covertedCoins.get(paramSplit[2]) === undefined) {
+      covertedCoins.set(data.PARAMETER, paramSplit[3]);
+      subscribeToTickerOnWs(paramSplit[2], "BTC");
+    }
+  }
+  if (type !== AGGREGATE_INDEX || newPrice === undefined) {
+    return;
+  }
+  if (exchange === "BTC" && currency !== "BTC") {
+    if (covertedCoins.get(`5~CCCAGG~${currency}~USD`) === "USD") {
+      console.error(btcUSD * newPrice);
+      newPrice = btcUSD * newPrice;
+      exchange = "USD";
+    } else {
+      if (covertedCoins.get(`5~CCCAGG~${currency}~RUB`) === "RUB") {
+        newPrice = btcRUB * newPrice;
+        exchange = "RUB";
+      } else {
+        if (covertedCoins.get(`5~CCCAGG~${currency}~KZT`) === "KZT") {
+          newPrice = btcKZT * newPrice;
+          exchange = "KZT";
+        }
+      }
+    }
+  }
+  const handlers = tickersHandlers.get(currency) ?? [];
+  // console.log(handlers);
+  if (socket.readyState === WebSocket.OPEN) {
+    const tickerCast = {
+      Sym: currency,
+      Price: newPrice,
+      Cur: exchange,
+    };
+    channel.postMessage(tickerCast);
+  }
+  handlers.forEach((fn) => fn(newPrice, exchange));
+});
 
 channel.onmessage = function (e) {
   if (socket.readyState === WebSocket.CLOSED) {

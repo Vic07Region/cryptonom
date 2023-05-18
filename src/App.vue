@@ -116,8 +116,10 @@
             @click="select(t)"
             :class="{
               'border-4': sel === t,
+              'bg-red-100': t.price === '-',
+              'bg-white': t.price != '-',
             }"
-            class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
+            class="overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
               <dt class="text-sm font-medium text-gray-500 truncate">
@@ -292,14 +294,12 @@ export default {
       if (maxValue === minValue) {
         return this.graph.map(() => 50);
       }
-      const maxLengh = this.graph.length + 50;
-      const minLengh = this.graph.length - 50;
+      // const maxLengh = this.graph.length + 50;
+      // const minLengh = this.graph.length - 50;
 
-      return this.graph
-        .map(
-          (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue) + 0
-        )
-        .slice(minLengh, maxLengh);
+      return this.graph.map(
+        (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue) + 0
+      ); // .slice(minLengh, maxLengh);
     },
     pageStateOptions() {
       return {
@@ -315,6 +315,9 @@ export default {
         .forEach((t) => {
           if (t === this.sel) {
             this.graph.push(price);
+            if (this.graph.length > 20) {
+              this.graph.shift();
+            }
           }
           t.price = price;
         });
@@ -362,7 +365,7 @@ export default {
     },
     tdelete(tik) {
       this.tikers = this.tikers.filter((t) => t != tik);
-      unsubscribeFromTicker(tik);
+      unsubscribeFromTicker(tik, tik.currency);
       if (this.sel === tik) {
         this.sel = null;
         //test
