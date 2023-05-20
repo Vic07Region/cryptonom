@@ -111,7 +111,6 @@ socket.addEventListener("message", (e) => {
   }
   if (exchange === "BTC" && currency !== "BTC") {
     if (covertedCoins.get(`5~CCCAGG~${currency}~USD`) === "USD") {
-      console.error(btcUSD * newPrice);
       newPrice = btcUSD * newPrice;
       exchange = "USD";
     } else {
@@ -127,7 +126,7 @@ socket.addEventListener("message", (e) => {
     }
   }
   const handlers = tickersHandlers.get(currency) ?? [];
-  // console.log(handlers);
+
   if (socket.readyState === WebSocket.OPEN) {
     const tickerCast = {
       Sym: currency,
@@ -141,7 +140,6 @@ socket.addEventListener("message", (e) => {
 
 channel.onmessage = function (e) {
   if (socket.readyState === WebSocket.CLOSED) {
-    // console.log("Received", e.data);
     if (!e.data.Del && !e.data.Add) {
       const handlers = tickersHandlers.get(e.data.Sym) ?? [];
       handlers.forEach((fn) => fn(e.data.Price, e.data.Cur));
