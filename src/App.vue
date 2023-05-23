@@ -91,7 +91,6 @@
 import _ from "lodash";
 import { subscribeToTicker, unsubscribeFromTicker } from "@/API";
 import TrashIcon from "@/components/icons/trashIcon";
-// import CloseIcon from "@/components/icons/closeIcon";
 import AddTicker from "@/components/AddTicker";
 import TickerGraphic from "@/components/TickerGraphic";
 

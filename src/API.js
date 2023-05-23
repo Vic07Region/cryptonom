@@ -56,24 +56,16 @@ export const subscribeToTicker = (ticker, cb, currency) => {
   const subscribers = tickersHandlers.get(ticker) || [];
   tickersHandlers.set(ticker, [...subscribers, cb]);
   subscribeToTickerOnWs(ticker, currency);
-  // console.log("sub", ticker, cb, currency);
-  // const tk = {
-  //   Add: ticker,
-  //   cur: currency,
-  //   cb: "" + cb,
-  // };
-  // console.log(ticker, tk, JSON.parse(JSON.stringify(tk)));
-  // channel.postMessage(JSON.parse(JSON.stringify(tk)));
 };
 
 export const unsubscribeFromTicker = (ticker, currency) => {
   tickersHandlers.delete(ticker);
-  // const tk = {
-  //   Del: ticker,
-  //   cur: currency,
-  // };
-  // channel.postMessage(JSON.parse(JSON.stringify(tk)));
-  unsubscribeFromTickerOnWs(ticker, currency);
+  if (covertedCoins.get(`5~CCCAGG~${ticker.name}~${currency}`)) {
+    covertedCoins.delete(`5~CCCAGG~${ticker.name}~${currency}`);
+    unsubscribeFromTickerOnWs(ticker.name, "BTC");
+    console.log(ticker.name, currency, covertedCoins);
+  }
+  unsubscribeFromTickerOnWs(ticker.name, currency);
 };
 let btcUSD = 0.0;
 let btcRUB = 0.0;
@@ -96,14 +88,25 @@ socket.addEventListener("message", (e) => {
     btcKZT = newPrice;
   }
   if (message === "INVALID_SUB") {
-    subscribeToTickerOnWs("BTC", "USD");
-    subscribeToTickerOnWs("BTC", "RUB");
-    subscribeToTickerOnWs("BTC", "KZT");
+    console.log(covertedCoins);
     const data = JSON.parse(e.data);
     let paramSplit = data.PARAMETER.split("~");
-    if (covertedCoins.get(paramSplit[2]) === undefined) {
+    if (covertedCoins.get(data.PARAMETER) === undefined) {
       covertedCoins.set(data.PARAMETER, paramSplit[3]);
       subscribeToTickerOnWs(paramSplit[2], "BTC");
+      switch (paramSplit[3]) {
+        case "USD":
+          subscribeToTickerOnWs("BTC", "USD");
+          break;
+        case "RUB":
+          subscribeToTickerOnWs("BTC", "RUB");
+          break;
+        case "KZT":
+          subscribeToTickerOnWs("BTC", "KZT");
+          break;
+        case "BTC":
+          break;
+      }
     }
   }
   if (type !== AGGREGATE_INDEX || newPrice === undefined) {

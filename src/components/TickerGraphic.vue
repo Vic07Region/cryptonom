@@ -32,6 +32,9 @@ export default {
       type: Array,
       default: () => [],
     },
+    emits: {
+      closeGraphic: null,
+    },
     coinData: {
       type: Object,
       default: () => {},
