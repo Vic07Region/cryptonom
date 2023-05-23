@@ -63,7 +63,6 @@ export const unsubscribeFromTicker = (ticker, currency) => {
   if (covertedCoins.get(`5~CCCAGG~${ticker.name}~${currency}`)) {
     covertedCoins.delete(`5~CCCAGG~${ticker.name}~${currency}`);
     unsubscribeFromTickerOnWs(ticker.name, "BTC");
-    console.log(ticker.name, currency, covertedCoins);
   }
   unsubscribeFromTickerOnWs(ticker.name, currency);
 };
@@ -88,7 +87,6 @@ socket.addEventListener("message", (e) => {
     btcKZT = newPrice;
   }
   if (message === "INVALID_SUB") {
-    console.log(covertedCoins);
     const data = JSON.parse(e.data);
     let paramSplit = data.PARAMETER.split("~");
     if (covertedCoins.get(data.PARAMETER) === undefined) {
