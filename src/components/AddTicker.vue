@@ -64,6 +64,9 @@ export default {
       default: () => [],
     },
   },
+  emits: {
+    "add-tiker": (value) => value.length > 0,
+  },
   data() {
     return {
       tiker: "",
