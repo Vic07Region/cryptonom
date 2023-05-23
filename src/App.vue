@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
     <div class="container">
-      <add-tiker @add-tiker="add" :tickerslist="gettikersList" />
+      <Add-Ticker @add-tiker="add" :tickerslist="gettikersList" />
       <template v-if="tikers.length">
         <label class="block text-sm font-medium text-gray-700" for="filters">
           фильтр
@@ -71,37 +71,18 @@
               class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none"
             >
               <trash-icon />
-              Удалить
+              Удалить.
             </button>
           </div>
         </dl>
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
-
-      <section v-if="sel" class="relative">
-        <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          {{ sel.name }} - {{ sel.currency }}
-        </h3>
-        <div
-          class="flex items-end border-gray-600 border-b border-l h-64"
-          ref="graph"
-        >
-          <div
-            v-for="(bar, idx) in normalizedGraph"
-            :key="idx"
-            :style="{ height: `${bar}%` }"
-            class="bg-purple-800 border w-5"
-            ref="bar"
-          ></div>
-        </div>
-        <button
-          @click="sel = null"
-          type="button"
-          class="absolute top-0 right-0"
-        >
-          <close-icon />
-        </button>
-      </section>
+      <Ticker-Graphic
+        v-if="sel"
+        :coinData="getCoinData"
+        :graphCoin="getGraphData"
+        @closeGraphic="sel = null"
+      />
     </div>
   </div>
 </template>
@@ -109,13 +90,14 @@
 <script>
 import _ from "lodash";
 import { subscribeToTicker, unsubscribeFromTicker } from "@/API";
-import addTiker from "@/components/addTiker";
 import TrashIcon from "@/components/icons/trashIcon";
-import CloseIcon from "@/components/icons/closeIcon";
+// import CloseIcon from "@/components/icons/closeIcon";
+import AddTicker from "@/components/AddTicker";
+import TickerGraphic from "@/components/TickerGraphic";
 
 export default {
   name: "App",
-  components: { CloseIcon, TrashIcon, addTiker },
+  components: { TickerGraphic, TrashIcon, AddTicker },
 
   data() {
     return {
@@ -124,13 +106,9 @@ export default {
       graph: [],
       page: 1,
       filter: "",
-      maxGraphLength: 1,
     };
   },
   mounted() {
-    window.addEventListener("resize", () => {
-      this.calculateMaxGraphLength();
-    });
     const windowData = Object.fromEntries(
       new URL(window.location).searchParams.entries()
     );
@@ -148,9 +126,6 @@ export default {
         );
       });
     }
-  },
-  beforeUnmount() {
-    window.removeEventListener("resize", this.calculateMaxGraphLength);
   },
   // created() {
   //   //
@@ -173,6 +148,15 @@ export default {
     gettikersList() {
       return this.tikers;
     },
+    getCoinData() {
+      if (this.sel) {
+        return { nameCoin: this.sel.name, currencyCoin: this.sel.currency };
+      }
+      return { nameCoin: "", currencyCoin: "" };
+    },
+    getGraphData() {
+      return this.graph;
+    },
     startIndex() {
       return (this.page - 1) * 6;
     },
@@ -190,23 +174,6 @@ export default {
     hasNpage() {
       return this.filtredTikers.length > this.endIndex;
     },
-    normalizedGraph() {
-      const maxValue = Math.max(...this.graph);
-      const minValue = Math.min(...this.graph);
-      if (maxValue === minValue) {
-        return this.graph.map(() => 50);
-      }
-      const minLengh =
-        this.graph.length <= this.maxGraphLength
-          ? 0
-          : this.graph.length - this.maxGraphLength;
-      const maxLengh = this.graph.length;
-      return this.graph
-        .map(
-          (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue) + 0
-        )
-        .slice(minLengh, maxLengh);
-    },
     pageStateOptions() {
       return {
         filter: this.filter,
@@ -215,16 +182,6 @@ export default {
     },
   },
   methods: {
-    calculateMaxGraphLength() {
-      if (!this.$refs.graph) {
-        return;
-      }
-      const barWidth =
-        this.graph.length > 0
-          ? this.$refs.bar[this.$refs.bar.length - 1].clientWidth
-          : 1;
-      this.maxGraphLength = Math.floor(this.$refs.graph.clientWidth / barWidth);
-    },
     updateTicker(tickerName, price, currency) {
       this.tikers
         .filter((t) => t.currency === currency && t.name === tickerName)
@@ -264,7 +221,6 @@ export default {
       unsubscribeFromTicker(tik, tik.currency);
       if (this.sel === tik) {
         this.sel = null;
-        //test
       }
     },
     select(tiker) {
@@ -277,7 +233,6 @@ export default {
     },
     sel() {
       this.graph = [];
-      this.$nextTick().then(this.calculateMaxGraphLength);
     },
     paginatedTiker() {
       if (this.paginatedTiker.length === 0 && this.page > 1) {
