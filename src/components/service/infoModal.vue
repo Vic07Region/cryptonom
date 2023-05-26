@@ -84,7 +84,6 @@ export default {
   },
   methods: {
     close() {
-      this.$emit("confirm", false);
       this.$emit("close");
     },
     confirm() {
