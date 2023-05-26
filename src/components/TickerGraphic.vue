@@ -15,7 +15,11 @@
         ref="bar"
       ></div>
     </div>
-    <button @click="closeGraph" type="button" class="absolute top-0 right-0">
+    <button
+      @click="$emit('click')"
+      type="button"
+      class="absolute top-0 right-0"
+    >
       <close-icon />
     </button>
   </section>
@@ -31,9 +35,6 @@ export default {
     graphCoin: {
       type: Array,
       default: () => [],
-    },
-    emits: {
-      closeGraphic: null,
     },
     coinData: {
       type: Object,
@@ -74,9 +75,6 @@ export default {
     },
   },
   methods: {
-    closeGraph() {
-      this.$emit("closeGraphic");
-    },
     calculateMaxGraphLength() {
       if (!this.$refs.graph) {
         return;

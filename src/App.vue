@@ -1,7 +1,17 @@
 <template>
+  <info-modal
+    v-show="isModalVisible"
+    @close="closeModal"
+    @confirm="confirmModal"
+    :message="modal"
+  />
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
     <div class="container">
-      <Add-Ticker @add-tiker="add" :tickerslist="gettikersList" />
+      <Add-Ticker
+        @click="add"
+        @keydown.enter="add"
+        :tickerslist="gettikersList"
+      />
       <template v-if="tikers.length">
         <label class="block text-sm font-medium text-gray-700" for="filters">
           фильтр
@@ -81,7 +91,7 @@
         v-if="sel"
         :coinData="getCoinData"
         :graphCoin="getGraphData"
-        @closeGraphic="sel = null"
+        @click="sel = null"
       />
     </div>
   </div>
@@ -93,10 +103,11 @@ import { subscribeToTicker, unsubscribeFromTicker } from "@/API";
 import TrashIcon from "@/components/icons/trashIcon";
 import AddTicker from "@/components/AddTicker";
 import TickerGraphic from "@/components/TickerGraphic";
+import InfoModal from "@/components/service/infoModal";
 
 export default {
   name: "App",
-  components: { TickerGraphic, TrashIcon, AddTicker },
+  components: { InfoModal, TickerGraphic, TrashIcon, AddTicker },
 
   data() {
     return {
@@ -105,6 +116,9 @@ export default {
       graph: [],
       page: 1,
       filter: "",
+      isModalVisible: false,
+      confirm: false,
+      modal: {},
     };
   },
   mounted() {
@@ -181,6 +195,17 @@ export default {
     },
   },
   methods: {
+    confirmModal(value) {
+      this.confirm = value;
+    },
+    showModal(title, body, confirm = false) {
+      this.modal = { title: title, body: body, confirm: confirm };
+      this.isModalVisible = true;
+      return this.confirm;
+    },
+    closeModal() {
+      this.isModalVisible = false;
+    },
     updateTicker(tickerName, price, currency) {
       this.tikers
         .filter((t) => t.currency === currency && t.name === tickerName)
@@ -203,7 +228,7 @@ export default {
         price: "-",
         currency: currencys,
       };
-      if (!is_valid && ticker !== "") {
+      if (!is_valid && ticker.length > 0) {
         this.tikers = [...this.tikers, currTiker];
         subscribeToTicker(
           currTiker.name,
@@ -212,7 +237,7 @@ export default {
           currTiker.currency
         );
       } else {
-        alert("Ошибка заполнения!");
+        this.showModal("Ошибка", "Ошибка заполнения: поле 'Тикер'!");
       }
     },
     tdelete(tik) {
