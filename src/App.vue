@@ -1,14 +1,13 @@
 <template>
-  <info-modal
-    v-show="isModalVisible"
-    @close="closeModal"
-    @confirm="confirmModal"
-    :message="modal"
-  />
+  <info-modal ref="modalpopup" />
+  <!--     v-show="isModalVisible"-->
+  <!--    @close="isModalVisible = false"-->
+  <!--    @confirm="tdelete(deletedTicker)"-->
+  <!--    :message="modal"-->
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
     <div class="container">
       <Add-Ticker
-        @click="add"
+        @add-click="add"
         @keydown.enter="add"
         :tickerslist="gettikersList"
       />
@@ -77,7 +76,7 @@
             </div>
             <div class="w-full border-t border-gray-200"></div>
             <button
-              @click.stop="tdelete(t)"
+              @click.stop="showModalDelete(t)"
               class="flex items-center justify-center font-medium w-full bg-gray-100 px-4 py-4 sm:px-6 text-md text-gray-500 hover:text-gray-600 hover:bg-gray-200 hover:opacity-20 transition-all focus:outline-none"
             >
               <trash-icon />
@@ -116,9 +115,6 @@ export default {
       graph: [],
       page: 1,
       filter: "",
-      isModalVisible: false,
-      confirm: false,
-      modal: {},
     };
   },
   mounted() {
@@ -195,16 +191,15 @@ export default {
     },
   },
   methods: {
-    confirmModal(value) {
-      this.confirm = value;
-    },
-    showModal(title, body, confirm = false) {
-      this.modal = { title: title, body: body, confirm: confirm };
-      this.isModalVisible = true;
-      return this.confirm;
-    },
-    closeModal() {
-      this.isModalVisible = false;
+    async showModalDelete(tik) {
+      const confirmDelete = await this.$refs.modalpopup.open(
+        "Удаление тикера",
+        `ВЫ подтверждаете удаление тикера ${tik.name}-${tik.currency}?`,
+        true
+      );
+      if (confirmDelete) {
+        this.tdelete(tik);
+      }
     },
     updateTicker(tickerName, price, currency) {
       this.tikers
@@ -223,12 +218,12 @@ export default {
       return price > 1 ? price.toFixed(2) : price.toPrecision(2);
     },
     add(ticker, currencys, is_valid) {
-      const currTiker = {
-        name: ticker.toUpperCase(),
-        price: "-",
-        currency: currencys,
-      };
       if (!is_valid && ticker.length > 0) {
+        const currTiker = {
+          name: ticker.toUpperCase(),
+          price: "-",
+          currency: currencys,
+        };
         this.tikers = [...this.tikers, currTiker];
         subscribeToTicker(
           currTiker.name,
@@ -237,7 +232,10 @@ export default {
           currTiker.currency
         );
       } else {
-        this.showModal("Ошибка", "Ошибка заполнения: поле 'Тикер'!");
+        this.$refs.modalpopup.open(
+          "Ошибка заполнения",
+          "Неверно заполнено поле Тикер"
+        );
       }
     },
     tdelete(tik) {
